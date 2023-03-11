@@ -1,78 +1,127 @@
-# Welcome to
-# __________         __    __  .__                               __
-# \______   \_____ _/  |__/  |_|  |   ____   ______ ____ _____  |  | __ ____
-#  |    |  _/\__  \\   __\   __\  | _/ __ \ /  ___//    \\__  \ |  |/ // __ \
-#  |    |   \ / __ \|  |  |  | |  |_\  ___/ \___ \|   |  \/ __ \|    <\  ___/
-#  |________/(______/__|  |__| |____/\_____>______>___|__(______/__|__\\_____>
-#
-# This file can be a nice home for your Battlesnake logic and helper functions.
-#
-# To get you started we've included code to prevent your Battlesnake from moving backwards.
-# For more info see docs.battlesnake.com
-
 import random
 import typing
+import collections
+from collections import Counter
 
+MOVES_MATH = {"up": [0,1], "down": [0,-1], "left": [-1,0], "right": [1,0]}
+UP = 0
+DOWN = 1
+LEFT = 2
+RIGHT = 3
+MOVES = ["up","down","left","right"]
+# GAME_ID = None
+# BOARD = None
+# BOUNDS = None
 
-# info is called when you create your Battlesnake on play.battlesnake.com
-# and controls your Battlesnake's appearance
-# TIP: If you open your Battlesnake URL in a browser you should see this data
+# IDEAS:
+#   - recursive, where # levels = space lookahead
+
+# TO-DO:
+#   - alter for multiple gamemodes (low)
+#   - 
+
 def info() -> typing.Dict:
     print("INFO")
 
     return {
         "apiversion": "1",
-        "author": "",  # TODO: Your Battlesnake Username
-        "color": "#888888",  # TODO: Choose color
-        "head": "default",  # TODO: Choose head
-        "tail": "default",  # TODO: Choose tail
+        "author": "cindyunrau",
+        "color": "#aeeb34",
+        "head": "snail",
+        "tail": "comet",
     }
 
-
-# start is called when your Battlesnake begins a game
 def start(game_state: typing.Dict):
-    print("GAME START")
+    print("GAME ON!!!")
 
+    GAME_ID = game_state["game"]["id"]
+    BOARD = {"width": game_state["board"]["width"],"height":game_state["board"]["height"]}
+    BOUNDS = {"min_x":0,"max_x":BOARD["width"]-1,"min_y":0,"max_y":BOARD["height"]-1}
 
-# end is called when your Battlesnake finishes a game
+    print("\tGame ID:",GAME_ID)
+    print("\tBoard Dimensions:",str(BOARD))
+    print("\tBoundaries:",str(BOUNDS))
+
 def end(game_state: typing.Dict):
-    print("GAME OVER\n")
+    print("gg")
+    print("WHAT'S DONE IS DONE\n")
 
+def get_reachable(center):
+    return {"up":{"x":center["x"],"y":center["y"]+1},"down":{"x":center["x"],"y":center["y"]-1},"left":{"x":center["x"]-1,"y":center["y"]},"right":{"x":center["x"]+1,"y":center["y"]}}
 
-# move is called on every turn and returns your next move
-# Valid moves are "up", "down", "left", or "right"
-# See https://docs.battlesnake.com/api/example-move for available data
-def move(game_state: typing.Dict) -> typing.Dict:
-
+def get_safe(my_body,my_length,snakes):
+    my_head = my_body[0]
+    possible_moves = get_reachable(my_head)
     is_move_safe = {"up": True, "down": True, "left": True, "right": True}
 
-    # We've included code to prevent your Battlesnake from moving backwards
-    my_head = game_state["you"]["body"][0]  # Coordinates of your head
-    my_neck = game_state["you"]["body"][1]  # Coordinates of your "neck"
-
-    if my_neck["x"] < my_head["x"]:  # Neck is left of head, don't move left
+    # avoid walls
+    if my_head["x"] == BOUNDS["x_min"]:
+        print("WALL: NO LEFT", my_head["x"])
         is_move_safe["left"] = False
-
-    elif my_neck["x"] > my_head["x"]:  # Neck is right of head, don't move right
+    elif my_head["x"] == BOUNDS["x_max"]:
+        print("WALL: NO RIGHT", my_head["x"])
         is_move_safe["right"] = False
-
-    elif my_neck["y"] < my_head["y"]:  # Neck is below head, don't move down
+    if my_head["y"] == BOUNDS["y_min"]:
+        print("WALL: NO DOWN", my_head["y"])
         is_move_safe["down"] = False
-
-    elif my_neck["y"] > my_head["y"]:  # Neck is above head, don't move up
+    elif my_head["y"] == BOUNDS["x_max"]:
+        print("WALL: NO UP", my_head["y"])
         is_move_safe["up"] = False
 
-    # TODO: Step 1 - Prevent your Battlesnake from moving out of bounds
-    # board_width = game_state['board']['width']
-    # board_height = game_state['board']['height']
+    # avoid body
+    for move, isSafe in is_move_safe.items():
+        if isSafe:
+            if possible_moves[move] in my_body:
+                print("BODY: NO", move.upper(), possible_moves[move], my_body)
+                is_move_safe[move] = False
 
-    # TODO: Step 2 - Prevent your Battlesnake from colliding with itself
-    # my_body = game_state['you']['body']
+    # avoid snakes (NOT TESTED)
+    for move, isSafe in is_move_safe.items():
+        if isSafe:
+            for snake in snakes:
+                    if possible_moves[move] in snake["body"]:
+                        print("SNAKE: NO", move.upper(), possible_moves[move], snake["body"])
+                        is_move_safe[move] = False
+    
+    # tail is safe
+    if(my_length>2):
+        for move, coords in possible_moves.items():
+            if coords == my_body[-1]:
+                is_move_safe[move] = True
 
-    # TODO: Step 3 - Prevent your Battlesnake from colliding with other Battlesnakes
-    # opponents = game_state['board']['snakes']
+    return is_move_safe
 
-    # Are there any safe moves left?
+def board_to_arr():
+    arr = []
+    for i in BOARD["width"]:
+        arr.append([])
+        for j in BOARD["height"]:
+                arr[i].append("-1")
+
+    return arr
+
+
+def move(game_state: typing.Dict) -> typing.Dict:
+    GAME_ID = game_state["game"]["id"]
+    BOARD = {"width": game_state["board"]["width"],"height":game_state["board"]["height"]}
+    global BOUNDS
+    BOUNDS = {"x_min":0,"x_max":BOARD["width"]-1,"y_min":0,"y_max":BOARD["height"]-1}
+
+    my_body = game_state["you"]["body"]
+    
+    my_length = game_state["you"]["length"]
+    my_health = game_state["you"]["health"]
+
+    food = game_state["board"]["food"]
+    hazards = game_state["board"]["hazards"]
+
+    garbage_snakes = game_state["board"]["snakes"]
+
+    moves = {"up": [0,1], "down": [0,-1], "left": [-1,0], "right": [1,0]}
+
+    is_move_safe = get_safe(my_body,my_length,garbage_snakes)
+    print(is_move_safe)
+
     safe_moves = []
     for move, isSafe in is_move_safe.items():
         if isSafe:
@@ -82,11 +131,41 @@ def move(game_state: typing.Dict) -> typing.Dict:
         print(f"MOVE {game_state['turn']}: No safe moves detected! Moving down")
         return {"move": "down"}
 
-    # Choose a random move from the safe ones
+    # TO-DOs:
+
+    # Prioritize food when: 
+    #   - Health Low (2)
+    if(my_health<25): # Determine optimal threshold
+        pass
+
+    #   - Food close by
+
+    #   - Other snakes "much" larger / I am small
+
+    # Given a movement choice, pick the one with the longest possible path (1)
+    #   - take moving snakes into account
+
+    # Better idling strategy?
     next_move = random.choice(safe_moves)
 
-    # TODO: Step 4 - Move towards food instead of random, to regain health and survive longer
-    # food = game_state['board']['food']
+    # Snake personality possibilities
+    #   - aggressive
+    #       - attack closest snake that is smaller than me
+    #       - pin snake against obstacles (wall, my body, other bodies)
+    #   - defensive, get food when needed, otherwise make safe moves
+
+    # Perform pathfinding on other snakes
+
+    # Assign risk values to each coordinate
+
+    # Algorithms
+    #   - A* - path search
+    #   - Flood fill - find open areas
+    #   - Minimax - tree search
+    #   - Monte Carlo - tree search
+    #   - Voronoi - estimate board area control
+
+
 
     print(f"MOVE {game_state['turn']}: {next_move}")
     return {"move": next_move}
