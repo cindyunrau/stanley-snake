@@ -1,12 +1,6 @@
-# Battlesnake Python Starter Project
+# Battlesnake Python Project
 
-An official Battlesnake template written in Python. Get started at [play.battlesnake.com](https://play.battlesnake.com).
-
-![Battlesnake Logo](https://media.battlesnake.com/social/StarterSnakeGitHubRepos_Python.png)
-
-This project is a great starting point for anyone wanting to program their first Battlesnake in Python. It can be run locally or easily deployed to a cloud provider of your choosing. See the [Battlesnake API Docs](https://docs.battlesnake.com/api) for more detail. 
-
-[![Run on Replit](https://repl.it/badge/github/BattlesnakeOfficial/starter-snake-python)](https://replit.com/@Battlesnake/starter-snake-python)
+![Battlesnake Logo](https://docs.battlesnake.com/img/logo-light.svg)
 
 ## Technologies Used
 
@@ -53,7 +47,5 @@ battlesnake play -W 11 -H 11 --name 'Python Starter Project' --url http://localh
 ```
 
 ## Next Steps
-
-Continue with the [Battlesnake Quickstart Guide](https://docs.battlesnake.com/quickstart) to customize and improve your Battlesnake's behavior.
 
 **Note:** To play games on [play.battlesnake.com](https://play.battlesnake.com) you'll need to deploy your Battlesnake to a live web server OR use a port forwarding tool like [ngrok](https://ngrok.com/) to access your server locally.
